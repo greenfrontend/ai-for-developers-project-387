@@ -77,12 +77,19 @@ jobs:
             --quiet
 
       - name: Summarize Lighthouse report
+        id: summary
         if: always()
         run: |
           node scripts/summarize-lighthouse.mjs \
             reports/lighthouse/lighthouse.report.json \
             reports/lighthouse/summary.md
           cat reports/lighthouse/summary.md >> "$GITHUB_STEP_SUMMARY"
+
+          if grep -q '^Action required:' reports/lighthouse/summary.md; then
+            echo "action_required=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "action_required=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Upload Lighthouse report
         if: always()
@@ -94,7 +101,7 @@ jobs:
           retention-days: 14
 
       - name: Ask OpenCode to record follow-up work
-        if: always()
+        if: always() && steps.summary.outputs.action_required == 'true'
         uses: anomalyco/opencode/github@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
