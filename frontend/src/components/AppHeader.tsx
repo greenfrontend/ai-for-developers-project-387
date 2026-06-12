@@ -1,4 +1,4 @@
-import { ActionIcon, AppShell, Button, Group, Menu, Text, Tooltip, rem } from '@mantine/core';
+import { ActionIcon, AppShell, Button, Group, Menu, Text, Tooltip, UnstyledButton, rem } from '@mantine/core';
 import {
   IconCalendarEvent,
   IconClipboardList,
@@ -26,12 +26,14 @@ export function AppHeader() {
   return (
     <AppShell.Header>
       <Group h="100%" px="lg" justify="space-between" wrap="nowrap">
-        <Group gap="xs" wrap="nowrap">
-          <IconListDetails size={24} stroke={1.8} />
-          <Text fw={700} size="lg">
-            Booking UI
-          </Text>
-        </Group>
+        <UnstyledButton component={Link} to="/">
+          <Group gap="xs" wrap="nowrap">
+            <IconListDetails size={24} stroke={1.8} />
+            <Text fw={700} size="lg">
+              Booking UI
+            </Text>
+          </Group>
+        </UnstyledButton>
         <Group gap="xs" wrap="nowrap" visibleFrom="sm">
           {navItems.map((item) => {
             const Icon = item.icon;
