@@ -1,0 +1,273 @@
+openapi: 3.0.0
+info:
+  title: Booking API
+  version: 0.0.0
+tags: []
+paths:
+  /admin/bookings/upcoming:
+    get:
+      operationId: AdminBookings_listUpcoming
+      description: List upcoming bookings across all event types for the predefined calendar owner.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Booking'
+  /admin/event-types:
+    post:
+      operationId: AdminEventTypes_create
+      description: Create an event type for the predefined calendar owner.
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventType'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventTypeRequest'
+  /bookings:
+    post:
+      operationId: Bookings_create
+      description: Create a guest booking for a free slot. Returns 400 when the selected start time is in the past or is not one of the offered slots. Returns 409 when any existing booking already starts at the selected time, even if it belongs to another event type.
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBookingRequest'
+  /event-types:
+    get:
+      operationId: EventTypes_list
+      description: List event types available to guests.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventType'
+  /event-types/{eventTypeId}:
+    get:
+      operationId: EventTypes_read
+      description: Get an event type by its generated id.
+      parameters:
+        - name: eventTypeId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventType'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /event-types/{eventTypeId}/slots:
+    get:
+      operationId: EventTypeSlots_list
+      description: List free slots for the selected event type in a calendar month. The month query uses YYYY-MM and defaults to the current month. The timeZone query uses an IANA time zone and defaults to UTC.
+      parameters:
+        - name: eventTypeId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: month
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/YearMonth'
+          explode: false
+        - name: timeZone
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Slot'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    Booking:
+      type: object
+      required:
+        - id
+        - eventTypeId
+        - eventTypeTitle
+        - startsAt
+        - endsAt
+        - guestName
+        - guestEmail
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        eventTypeId:
+          $ref: '#/components/schemas/Uuid'
+        eventTypeTitle:
+          type: string
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+          description: Calculated as startsAt plus the selected event type duration.
+        guestName:
+          type: string
+        guestEmail:
+          type: string
+      description: A guest booking. The end time is calculated from the event type duration.
+    CreateBookingRequest:
+      type: object
+      required:
+        - eventTypeId
+        - startsAt
+        - guestName
+        - guestEmail
+      properties:
+        eventTypeId:
+          allOf:
+            - $ref: '#/components/schemas/Uuid'
+          description: The event type selected by the guest.
+        startsAt:
+          type: string
+          format: date-time
+          description: Must be one of the free slot start times for the selected event type.
+        guestName:
+          type: string
+        guestEmail:
+          type: string
+      description: Input used by a guest to create a booking.
+    CreateEventTypeRequest:
+      type: object
+      required:
+        - title
+        - description
+        - durationMinutes
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        durationMinutes:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Duration of this event type in minutes.
+      description: Input used by the calendar owner to create an event type.
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    EventType:
+      type: object
+      required:
+        - id
+        - title
+        - description
+        - durationMinutes
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        title:
+          type: string
+        description:
+          type: string
+        durationMinutes:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Duration of this event type in minutes.
+      description: A type of event that guests can book.
+    Slot:
+      type: object
+      required:
+        - startsAt
+        - endsAt
+      properties:
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+      description: A free booking slot for a selected event type in a calendar month.
+    Uuid:
+      type: string
+      format: uuid
+      description: Database-generated UUID.
+    YearMonth:
+      type: string
+      description: Calendar month in YYYY-MM format.

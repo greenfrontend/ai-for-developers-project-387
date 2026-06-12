@@ -1,0 +1,33 @@
+{
+  "name": "frontend",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "generate:api": "openapi-ts"
+  },
+  "dependencies": {
+    "@hey-api/client-fetch": "0.13.1",
+    "@mantine/core": "9.3.1",
+    "@mantine/dates": "^9.3.1",
+    "@mantine/hooks": "9.3.1",
+    "@mantine/notifications": "9.3.1",
+    "@mantine/schedule": "^9.3.1",
+    "@tabler/icons-react": "3.44.0",
+    "dayjs": "^1.11.21",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "react-router-dom": "7.17.0"
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "0.98.2",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.2",
+    "typescript": "6.0.3",
+    "vite": "8.0.16"
+  }
+}

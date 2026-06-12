@@ -1,0 +1,16 @@
+{
+  "name": "contracts",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "tsp compile .",
+    "mock": "prism mock -p 4010 generated/openapi.yaml"
+  },
+  "devDependencies": {
+    "@stoplight/prism-cli": "5.14.2",
+    "@typespec/compiler": "1.13.0",
+    "@typespec/http": "1.13.0",
+    "@typespec/openapi3": "1.13.0"
+  }
+}
