@@ -8,9 +8,7 @@ frontend.
 
 ## Deployment
 
-Deployment for this repository is not configured yet. The code was transferred
-from the previous project repository as the base application for the teamwork
-workflow project.
+The production URL of the service is [https://ai-for-developers-project-386-yzyj.onrender.com](https://ai-for-developers-project-386-yzyj.onrender.com).
 
 ## Workspaces
 
