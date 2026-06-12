@@ -1,0 +1,120 @@
+name: nightly-lighthouse
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+on:
+  schedule:
+    # 02:37 Asia/Yekaterinburg, Monday-Friday. GitHub schedules use UTC.
+    - cron: "37 21 * * 0-4"
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: "URL to audit. Defaults to the LIGHTHOUSE_TARGET_URL repository variable."
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+concurrency:
+  group: nightly-lighthouse
+  cancel-in-progress: false
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      LIGHTHOUSE_TARGET_URL: ${{ inputs.target_url || vars.LIGHTHOUSE_TARGET_URL }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Validate target URL
+        run: |
+          if [ -z "$LIGHTHOUSE_TARGET_URL" ]; then
+            echo "LIGHTHOUSE_TARGET_URL is not set. Add a repository variable or pass target_url manually." >&2
+            exit 1
+          fi
+
+          mkdir -p reports/lighthouse
+          printf '%s\n' "$LIGHTHOUSE_TARGET_URL" > reports/lighthouse/target-url.txt
+          echo "Auditing $LIGHTHOUSE_TARGET_URL"
+
+      - name: Warm up target
+        run: |
+          curl \
+            --fail \
+            --location \
+            --max-time 30 \
+            --retry 6 \
+            --retry-delay 10 \
+            --retry-connrefused \
+            "$LIGHTHOUSE_TARGET_URL" \
+            --output /dev/null
+
+      - name: Run Lighthouse
+        id: lighthouse
+        continue-on-error: true
+        run: |
+          npx --yes lighthouse@13.4.0 "$LIGHTHOUSE_TARGET_URL" \
+            --output=html \
+            --output=json \
+            --output-path=reports/lighthouse/lighthouse \
+            --chrome-flags="--headless=new --no-sandbox --disable-dev-shm-usage" \
+            --quiet
+
+      - name: Summarize Lighthouse report
+        if: always()
+        run: |
+          node scripts/summarize-lighthouse.mjs \
+            reports/lighthouse/lighthouse.report.json \
+            reports/lighthouse/summary.md
+          cat reports/lighthouse/summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Lighthouse report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse-report
+          path: reports/lighthouse/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Ask OpenCode to record follow-up work
+        if: always()
+        uses: anomalyco/opencode/github@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        with:
+          model: openrouter/~google/gemini-flash-latest
+          use_github_token: true
+          prompt: |
+            You are running from the scheduled/manual Lighthouse workflow.
+
+            Read reports/lighthouse/summary.md and, if present, reports/lighthouse/lighthouse.report.json.
+
+            If the summary says "Action required" or Lighthouse failed to produce a readable report:
+            - create a GitHub issue with concrete follow-up fixes, or comment on an existing open Lighthouse issue if one already tracks the same problem;
+            - include the affected Lighthouse categories and the target URL;
+            - include this workflow run URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}.
+
+            If all tracked scores meet the thresholds, do not create an issue.
+            Do not change application code and do not open a pull request from this workflow.
+
+      - name: Fail if Lighthouse command failed
+        if: steps.lighthouse.outcome == 'failure'
+        run: exit 1
