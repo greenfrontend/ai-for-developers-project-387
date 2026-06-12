@@ -26,12 +26,14 @@ export function AppHeader() {
   return (
     <AppShell.Header>
       <Group h="100%" px="lg" justify="space-between" wrap="nowrap">
-        <Group gap="xs" wrap="nowrap">
-          <IconListDetails size={24} stroke={1.8} />
-          <Text fw={700} size="lg">
-            Booking UI
-          </Text>
-        </Group>
+        <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <Group gap="xs" wrap="nowrap" style={{ cursor: 'pointer' }}>
+            <IconListDetails size={24} stroke={1.8} />
+            <Text fw={700} size="lg">
+              Booking UI
+            </Text>
+          </Group>
+        </Link>
         <Group gap="xs" wrap="nowrap" visibleFrom="sm">
           {navItems.map((item) => {
             const Icon = item.icon;
